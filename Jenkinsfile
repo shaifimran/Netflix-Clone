@@ -3,12 +3,9 @@ pipeline {
 
     tools {
         jdk 'jdk17'
-        nodejs 'nodejs16'
     }
 
     environment {
-        SCANNER_HOME = tool 'sonar-scanner'
-        NODE_HOME = tool 'nodejs16'
         DOCKERHUB_CREDENTIALS = 'docker'
     }
 
@@ -28,21 +25,27 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                sh "${NODE_HOME}/bin/npm install"
+                script {
+                    def NODE_HOME = tool 'nodejs16'
+                    sh "${NODE_HOME}/bin/npm install"
+                }
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                withCredentials([string(credentialsId: 'squ_token', variable: 'SONAR_TOKEN')]) {
-                    withSonarQubeEnv('SonarQube') {
-                        sh """
-                            ${SCANNER_HOME}/bin/sonar-scanner \
-                            -Dsonar.projectKey=netflix-app \
-                            -Dsonar.sources=. \
-                            -Dsonar.host.url=http://98.83.253.163:9000 \
-                            -Dsonar.login=$SONAR_TOKEN
-                        """
+                script {
+                    def SCANNER_HOME = tool 'sonar-scanner'
+                    withCredentials([string(credentialsId: 'squ_token', variable: 'SONAR_TOKEN')]) {
+                        withSonarQubeEnv('SonarQube') {
+                            sh """
+                                ${SCANNER_HOME}/bin/sonar-scanner \
+                                -Dsonar.projectKey=netflix-app \
+                                -Dsonar.sources=. \
+                                -Dsonar.host.url=http://98.83.253.163:9000 \
+                                -Dsonar.login=$SONAR_TOKEN
+                            """
+                        }
                     }
                 }
             }
@@ -51,7 +54,6 @@ pipeline {
         stage('Quality Gate') {
             steps {
                 script {
-                    // waitForQualityGate without timeout (plugin version does not support it)
                     def qg = waitForQualityGate abortPipeline: true
                     echo "Quality Gate status: ${qg.status}"
                 }
