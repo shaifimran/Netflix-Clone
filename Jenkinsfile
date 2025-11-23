@@ -113,9 +113,9 @@ pipeline {
                 script {
                     withDockerRegistry(credentialsId: "${DOCKERHUB_CREDENTIALS}") {
                         sh """
-                            docker build -t netflix .
-                            docker tag netflix shaifimran/netflix:latest
-                            docker push shaifimran/netflix:latest
+                            sudo docker build -t netflix .
+                            sudo docker tag netflix 22i1024/netflix:latest
+                            sudo docker push 22i1024/netflix:latest
                         """
                     }
                 }
@@ -131,8 +131,8 @@ pipeline {
         stage('Deploy Container') {
             steps {
                 sh """
-                    docker rm -f netflix || true
-                    docker run -d --name netflix -p 8081:80 shaifimran/netflix:latest
+                    sudo docker rm -f netflix || true
+                    sudo docker run -d --name netflix -p 8081:80 shaifimran/netflix:latest
                 """
             }
         }
