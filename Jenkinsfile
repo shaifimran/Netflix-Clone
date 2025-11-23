@@ -34,7 +34,7 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withCredentials([string(credentialsId: 'squ_token', variable: 'SONAR_TOKEN')]) {
-                    withSonarQubeEnv('sonar-server') {
+                    withSonarQubeEnv('SonarQube') {
                         sh """
                             ${SCANNER_HOME}/bin/sonar-scanner \
                             -Dsonar.projectKey=netflix-app \
