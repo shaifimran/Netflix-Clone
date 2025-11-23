@@ -27,7 +27,10 @@ pipeline {
             steps {
                 script {
                     def NODE_HOME = tool 'nodejs16'
-                    sh "${NODE_HOME}/bin/npm install"
+                    sh """
+                        export PATH=${NODE_HOME}/bin:\$PATH
+                        npm install
+                    """
                 }
             }
         }
@@ -126,3 +129,4 @@ pipeline {
 
     }
 }
+
