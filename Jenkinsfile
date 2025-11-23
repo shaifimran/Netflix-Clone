@@ -3,13 +3,12 @@ pipeline {
 
     tools {
         jdk 'jdk17'
-        nodejs 'node16'
+        nodejs 'nodejs16'
     }
 
     environment {
         SCANNER_HOME = tool 'sonar-scanner'
-        DOCKERHUB_CREDENTIALS = 'docker'      // your credentials ID
-        SONARQUBE_SERVER = 'sonar-server'     // your SonarQube name in Jenkins
+        DOCKERHUB_CREDENTIALS = 'docker'
     }
 
     stages {
@@ -22,7 +21,7 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                git branch: 'main', url: '<YOUR_GITHUB_REPO_URL>'
+                git branch: 'main', url: 'https://github.com/shaifimran/Netflix-Clone.git'
             }
         }
 
@@ -34,14 +33,16 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('sonar-server') {
-                    sh """
-                        ${SCANNER_HOME}/bin/sonar-scanner \
-                        -Dsonar.projectKey=netflix-app \
-                        -Dsonar.sources=. \
-                        -Dsonar.host.url=http://<YOUR-SONAR-IP>:9000 \
-                        -Dsonar.login=<YOUR-TOKEN>
-                    """
+                withCredentials([string(credentialsId: 'squ_token', variable: 'SONAR_TOKEN')]) {
+                    withSonarQubeEnv('sonar-server') {
+                        sh """
+                            ${SCANNER_HOME}/bin/sonar-scanner \
+                            -Dsonar.projectKey=netflix-app \
+                            -Dsonar.sources=. \
+                            -Dsonar.host.url=http://98.83.253.163:9000 \
+                            -Dsonar.login=$SONAR_TOKEN
+                        """
+                    }
                 }
             }
         }
@@ -56,30 +57,25 @@ pipeline {
 
         stage('OWASP Dependency Check') {
             steps {
-                dependencyCheck additionalArguments: '''
-                    --scan .
-                    --format XML
-                ''',
-                outdir: 'dependency-check-report'
-                
+                dependencyCheck additionalArguments: '--scan . --format XML', odcInstallation: 'DP-Check'
                 dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
             }
         }
 
         stage('Trivy FS Scan') {
             steps {
-                sh "trivy fs . > trivyfs-report.txt"
+                sh "trivy fs . > trivy-fs-report.txt"
             }
         }
 
         stage('Docker Build & Push') {
             steps {
                 script {
-                    withDockerRegistry(credentialsId: DOCKERHUB_CREDENTIALS, toolName: 'docker') {
+                    withDockerRegistry(credentialsId: 'docker') {
                         sh """
-                            docker build --build-arg TMDB_V3_API_KEY=<YOUR_API_KEY> -t netflix .
-                            docker tag netflix <your-dockerhub-username>/netflix:latest
-                            docker push <your-dockerhub-username>/netflix:latest
+                            docker build -t netflix .
+                            docker tag netflix shaifimran/netflix:latest
+                            docker push shaifimran/netflix:latest
                         """
                     }
                 }
@@ -88,7 +84,7 @@ pipeline {
 
         stage('Trivy Image Scan') {
             steps {
-                sh "trivy image <your-dockerhub-username>/netflix:latest > trivy-image-report.txt"
+                sh "trivy image shaifimran/netflix:latest > trivy-image-report.txt"
             }
         }
 
@@ -96,7 +92,7 @@ pipeline {
             steps {
                 sh """
                     docker rm -f netflix || true
-                    docker run -d --name netflix -p 8081:80 <your-dockerhub-username>/netflix:latest
+                    docker run -d --name netflix -p 8081:80 shaifimran/netflix:latest
                 """
             }
         }
