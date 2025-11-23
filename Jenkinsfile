@@ -55,15 +55,57 @@ pipeline {
         }
 
         stage('Quality Gate') {
-    steps {
-        timeout(time: 3, unit: 'MINUTES') {  // 3-minute timeout
-            script {
-                def qg = waitForQualityGate abortPipeline: true
-                echo "Quality Gate status: ${qg.status}"
+            steps {
+                script {
+                    // Poll SonarQube manually
+                    def SONAR_TOKEN = sh(script: "echo \$SONAR_TOKEN", returnStdout: true).trim()
+                    def SONAR_PROJECT_KEY = 'netflix-app'
+
+                    // Get the task ID of the latest analysis
+                    def SONAR_TASK_ID = sh(
+                        script: """curl -s -u squ_f786105b44326c311e2109378b4996037fcb8d84: \
+                        http://98.83.253.163:9000/api/ce/task?componentKey=${SONAR_PROJECT_KEY} | jq -r '.task.id'""",
+                        returnStdout: true
+                    ).trim()
+                    echo "SonarQube task ID: ${SONAR_TASK_ID}"
+
+                    // Poll until analysis is complete (timeout ~5 minutes)
+                    def maxAttempts = 30
+                    def attempt = 0
+                    def status = ''
+                    while (attempt < maxAttempts) {
+                        def response = sh(
+                            script: "curl -s -u squ_f786105b44326c311e2109378b4996037fcb8d84: http://98.83.253.163:9000/api/ce/task?id=${SONAR_TASK_ID}",
+                            returnStdout: true
+                        ).trim()
+                        status = sh(script: "echo '${response}' | jq -r '.task.status'", returnStdout: true).trim()
+                        echo "Attempt ${attempt+1}: SonarQube task status = ${status}"
+                        if (status == 'SUCCESS' || status == 'FAILED' || status == 'CANCELED') {
+                            break
+                        }
+                        attempt++
+                        sleep 10
+                    }
+
+                    if (status != 'SUCCESS') {
+                        error "SonarQube analysis did not complete successfully: ${status}"
+                    }
+
+                    // Get actual Quality Gate status
+                    def analysisId = sh(script: "echo '${response}' | jq -r '.task.analysisId'", returnStdout: true).trim()
+                    def qgResponse = sh(
+                        script: "curl -s -u squ_f786105b44326c311e2109378b4996037fcb8d84: http://98.83.253.163:9000/api/qualitygates/project_status?analysisId=${analysisId}",
+                        returnStdout: true
+                    ).trim()
+                    def qgStatus = sh(script: "echo '${qgResponse}' | jq -r '.projectStatus.status'", returnStdout: true).trim()
+                    echo "Quality Gate status: ${qgStatus}"
+
+                    if (qgStatus != 'OK') {
+                        error "Pipeline failed due to Quality Gate status: ${qgStatus}"
+                    }
+                }
             }
         }
-    }
-}
 
         stage('OWASP Dependency Check') {
             steps {
@@ -131,4 +173,3 @@ pipeline {
 
     }
 }
-
