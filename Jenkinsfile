@@ -9,9 +9,9 @@ pipeline {
     environment {
         SCANNER_HOME = tool 'sonar-scanner'
         DOCKERHUB_CREDENTIALS = 'docker'
-        DOCKER_USERNAME = 'shaifimran'
+        DOCKER_USERNAME = '22i1024'
         TMDB_API_KEY = 'a7e149dffa03bc3f6db3ada1e39c51ce'
-        SONAR_TOKEN_ID = 'squ_token' // Jenkins credential ID
+        SONAR_TOKEN_ID = 'sonarcube_token' // Jenkins credential ID
         SONAR_PROJECT_KEY = 'netflix-app'
         SONAR_HOST_URL = 'http://98.83.253.163:9000'
     }
