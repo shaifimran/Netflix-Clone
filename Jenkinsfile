@@ -9,6 +9,8 @@ pipeline {
     environment {
         SCANNER_HOME = tool 'sonar-scanner'
         DOCKERHUB_CREDENTIALS = 'docker'
+        DOCKER_USERNAME = 'shaifimran'
+        TMDB_API_KEY = 'a7e149dffa03bc3f6db3ada1e39c51ce'
         SONAR_TOKEN_ID = 'squ_token' // Jenkins credential ID
         SONAR_PROJECT_KEY = 'netflix-app'
         SONAR_HOST_URL = 'http://98.83.253.163:9000'
@@ -113,9 +115,9 @@ pipeline {
                 script {
                     withDockerRegistry(credentialsId: "${DOCKERHUB_CREDENTIALS}") {
                         sh """
-                            docker build -t netflix .
-                            docker tag netflix 22i1024/netflix:latest
-                            docker push 22i1024/netflix:latest
+                            docker build --build-arg TMDB_V3_API_KEY=${TMDB_API_KEY} -t netflix .
+                            docker tag netflix ${DOCKER_USERNAME}/netflix:latest
+                            docker push ${DOCKER_USERNAME}/netflix:latest
                         """
                     }
                 }
@@ -124,7 +126,7 @@ pipeline {
 
         stage('Trivy Image Scan') {
             steps {
-                sh "trivy image shaifimran/netflix:latest > trivy-image-report.txt || true"
+                sh "trivy image ${DOCKER_USERNAME}/netflix:latest > trivy-image-report.txt || true"
             }
         }
 
@@ -132,7 +134,7 @@ pipeline {
             steps {
                 sh """
                     docker rm -f netflix || true
-                    docker run -d --name netflix -p 8081:80 shaifimran/netflix:latest
+                    docker run -d --name netflix -p 8081:80 ${DOCKER_USERNAME}/netflix:latest
                 """
             }
         }

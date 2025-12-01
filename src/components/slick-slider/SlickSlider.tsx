@@ -21,7 +21,7 @@ const RootStyle = styled("div")(() => ({
   overflow: "inherit",
 }));
 
-const StyledSlider = styled(Slider)(
+const StyledSlider = styled(Slider as any)(
   ({ theme, padding }: { theme: Theme; padding: number }) => ({
     display: "flex !important",
     justifyContent: "center",
@@ -186,7 +186,7 @@ export default function SlickSlider({ data, genre }: SlickSliderProps) {
               activeSlideIndex={activeSlideIndex}
             >
               <StyledSlider
-                ref={sliderRef}
+                ref={sliderRef as any}
                 {...settings}
                 padding={ARROW_MAX_WIDTH}
                 theme={theme}

@@ -18,15 +18,18 @@ store.dispatch(extendedApi.endpoints.getConfiguration.initiate(undefined));
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
 );
-root.render(
-  <Provider store={store}>
-    <React.StrictMode>
+
+const app = (
+  <React.StrictMode>
+    <Provider store={store}>
       <ThemeProvider theme={createTheme({ palette })}>
         <RouterProvider
           router={router}
           fallbackElement={<MainLoadingScreen />}
         />
       </ThemeProvider>
-    </React.StrictMode>
-  </Provider>
+    </Provider>
+  </React.StrictMode>
 );
+
+root.render(app as any);
